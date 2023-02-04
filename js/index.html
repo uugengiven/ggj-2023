@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="https://cdn.jsdelivr.net/npm/handlebars@latest/dist/handlebars.js"></script>
+    <script src="plants.js"></script>
+    <script src="draw.js"></script>
+    <script>
+        var current_month = 0;
+        const month_names = ["April", "May", "June", "July", "August", "September"]
+
+        function startup() {
+            display_plots()
+        }
+
+        function next_month() {
+            grow_cycle(current_month, plots[0]);
+            current_month++;
+            if (current_month > 5)
+            {
+                current_month = 0;
+                // this should be "done for the year"
+            }
+            display_plots();
+        }
+
+        function display_plots() {
+            document.getElementById("blerk").innerHTML = draw_plot(plots[0]);
+            document.getElementById("month").innerHTML = month_names[current_month];
+        }
+    </script>
+</head>
+<body onload="startup()">
+    Doing them plants - Date: <span id="month"></span> 1st
+    <div id="blerk"></div>
+    <button onclick="next_month()">Next Month</button>
+</body>
+
+<script id="plot-template" type="text/x-handlebars-template">
+    <div>
+        <ul>
+            <li>average sun {{sun}}</li>
+            <li>average water {{water}}</li>
+            <li>nitrogen {{dirt.nitrogen}}</li>
+            <li>phosphorus {{dirt.phosphorus}}</li>
+            <li>potassium {{dirt.potassium}}</li>
+            <li>plant sun {{plant_base.sun}}</li>
+            <li>Root Depth {{plant.root_depth}}</li>
+            <li>Leaf Size {{plant.leaf_size}}</li>
+        </ul>
+    </div>
+</script>
+</html>
