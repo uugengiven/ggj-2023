@@ -1,0 +1,85 @@
+.plots {
+    display: flex;
+    padding: 1em;
+}
+.plots>div {
+    border: solid 1px black;
+    padding: 1em;
+    margin: 1em;
+}
+
+.seed_modal {
+    position: absolute;
+    top: 10vh;
+    left: 10vw;
+    width: 80vw;
+    height: 80vh;
+    background-color: rgba(230, 230, 230, .8);
+    border-radius: 20px;
+    box-shadow: 5px 5px 10px 0px rgba(50, 50, 50, .8);
+    display: none;
+    padding: 3em;
+    box-sizing: border-box;
+}
+
+.seed_info {
+    position: absolute;
+    visibility: hidden;
+    min-width: 10vw;
+    min-height: 15vh;
+    background-color: rgba(230, 230, 230, .8);
+    border-radius: 5px;
+    box-shadow: 3px 3px 6px 0px rgba(50, 50, 50, .8);
+    padding: 1em;
+}
+
+.screen {
+    display: flex;
+}
+
+.splice_modal {
+    display: flex;
+    flex-direction: column;
+}
+.splice_modal>span {
+    align-self:flex-end;
+}
+
+.selections {
+    display: flex;
+    justify-content: space-between;
+    margin: 2em;
+}
+
+.selections>div {
+    width: 30%
+}
+
+.splice_controls {
+    text-align: right;
+    margin: 2em;
+}
+
+.modal {
+    visibility: hidden;
+    position: absolute;
+    background-color: rgba(230, 230, 230, .8);
+    border-radius: 5px;
+    box-shadow: 3px 3px 6px 0px rgba(50, 50, 50, .8);
+    padding: 1em;
+}
+
+.winner {
+    position: absolute;
+    display: flex;
+    justify-content: center;
+    align-items:center;
+    visibility: hidden;
+    width: 100vw;
+    height: 100vh;
+    font-size: 4em;
+    background-color:rgba(50, 50, 50, .8);
+    color: whitesmoke;
+    top: 0;
+    left: 0;
+}

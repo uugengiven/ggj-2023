@@ -6,51 +6,341 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
     <script src="https://cdn.jsdelivr.net/npm/handlebars@latest/dist/handlebars.js"></script>
+    <script src="seed_data.js"></script>
     <script src="plants.js"></script>
     <script src="draw.js"></script>
+    <script src="game.js"></script>
     <script>
         var current_month = 0;
-        const month_names = ["April", "May", "June", "July", "August", "September"]
+        const month_names = ["April", "May", "June", "July", "August", "September", "October"]
+
+        // ok, so I guess I need to do this now
+        const controls = {};
+        let state = START_OF_YEAR;
 
         function startup() {
-            display_plots()
+            setup_controls();
+            set_state(START_OF_YEAR);
+        }
+
+        function set_state(new_state) {
+            let old_state = state;
+            state = new_state;
+            
+            refresh_controls();
+
+            switch(state)
+            {
+                case START_OF_YEAR:
+                    new_year();
+                case END_OF_YEAR:
+                    do_end_of_year();
+            }
+
+            refresh_display();
+        }
+
+        function do_end_of_year() {
+            let total_crops = get_total_food();
+
+            if(total_crops > 300)
+            {
+                console.log("WINNER");
+                document.getElementById("mission").innerHTMl = "YOU WIN!!!"
+                set_state(YOU_WIN);
+            }
+            document.getElementById("food").innerHTML = total_crops;
+        }
+
+        function refresh_controls() {
+            controls["all"].forEach(control => control.style.visibility = "hidden");
+            controls[state].forEach(control => control.style.visibility = "visible");
+        }
+
+        function refresh_display() {
+            display_plots();
+            display_inventory();
         }
 
         function next_month() {
-            grow_cycle(current_month, plots[0]);
+            plots.forEach(plot => {
+                grow_cycle(current_month, plot);
+            })
             current_month++;
+
             if (current_month > 5)
             {
-                current_month = 0;
-                // this should be "done for the year"
+                set_state(END_OF_YEAR);
             }
             display_plots();
         }
 
+        function new_year() {
+            current_month = 0;
+            clear_plots();
+        }
+
         function display_plots() {
-            document.getElementById("blerk").innerHTML = draw_plot(plots[0]);
+            var plots_area = document.getElementById("plots");
+            var plots_html = "";
+            get_plots().forEach(plot => {
+                if(state == END_OF_YEAR)
+                {
+                    plots_html += draw_plot({...plot, save: true});    
+                }
+                else
+                {
+                    plots_html += draw_plot(plot);
+                }
+            })
+            plots_area.innerHTML = plots_html;
             document.getElementById("month").innerHTML = month_names[current_month];
         }
+
+        function display_inventory() {
+            var inventory = document.getElementById("inventory");
+            inventory.innerHTML = draw_inventory(game.seed_list);
+        }
+
+        function save_plant(id) {
+            save_seed_to_inventory(find_seed_in_plot(id), document.getElementById("new_name").value);
+            display_inventory();
+        }
+
+        function remove_inventory(id) {
+            remove_seed_from_inventory(id);
+            display_inventory();
+        }
+
+        function plant_new(plot_id) {
+            const seed_picker = document.getElementById("seed_picker");
+            seed_picker.innerHTML = draw_seed_picker(plot_id, game.seed_list);
+            seed_picker.style.display = "inline-block";
+        }
+
+        function select_inventory(plot_id, seed_id) {
+            plant_plot(plot_id, seed_id);
+            document.getElementById("seed_picker").style.display = "none";
+            seed_overlay_close();
+            check_planting_progress();
+            // hide 
+            display_plots();
+        }
+
+        function check_planting_progress() {
+            if(!get_plots().find(plot => plot.plant_base.name == undefined))
+            {
+                set_state(GROWING);
+            }
+        }
+
+        function seed_overlay(e, seed_id) {
+            let seed_info = document.getElementById("seed_info");
+            seed_info.innerHTML = draw_seed_info(find_seed_in_inventory(seed_id));
+            seed_info.style.top = `${e.clientY + 10}px`;
+            seed_info.style.left = `${e.clientX + 10}px`;
+            seed_info.style.visibility = "visible";
+        }
+
+        function seed_overlay_close() {
+            document.getElementById("seed_info").style.visibility = "hidden";
+        }
+
+        function setup_controls() {
+            controls["all"] = [];
+            controls[GROWING] = [];
+            controls[START_OF_YEAR] = [];
+            controls[END_OF_YEAR] = [];
+            controls[YOU_WIN] = [];
+            add_control("btn_month", [GROWING]);
+            add_control("btn_year", [END_OF_YEAR]);
+            add_control("winner", [YOU_WIN])
+        }
+
+        function add_control(id, states){
+            const control = document.getElementById(id);
+            if(!controls["all"])
+            {
+                controls["all"] = [];
+            }
+            states.forEach(state => {
+                if(!controls[state].find(arr => arr.id == id))
+                {
+                    controls[state].push(control);
+                }
+                if(!controls["all"].find(arr => arr.id == id))
+                {
+                    controls["all"].push(control);
+                }
+            });
+        }
+
+        function end_year() {
+            set_state(START_OF_YEAR);
+        }
+
+        function open_splice() {
+            let modal = document.getElementById("splice_modal");
+            modal.innerHTML = draw_splice(game.seed_list);
+            modal.style.visibility = "visible";
+        }
+
+        function close_splice() {
+            let modal = document.getElementById("splice_modal");
+            modal.style.visibility = "hidden";
+        }
+
+        function save_splice() {
+            const left_id = document.getElementById("splice_left").value
+            const right_id = document.getElementById("splice_right").value
+            const method = document.getElementById("splice_method").value
+            const name = document.getElementById("splice_name").value
+            splice_and_save(left_id, right_id, method, name);
+
+            refresh_display();
+        }
     </script>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body onload="startup()">
-    Doing them plants - Date: <span id="month"></span> 1st
-    <div id="blerk"></div>
-    <button onclick="next_month()">Next Month</button>
+    Doing them plants - Date: <span id="month"></span> 1st 
+    <button id="btn_month" onclick="next_month()">Next Month</button><button id="btn_year" onclick="end_year()">End Year</button>
+    <div class="screen">
+        <div id="plots" class="plots"></div>
+        <div id="inventory" class="inventory"></div>
+    </div>
+    Name of Seed
+    <input id="new_name" type="text">
+    <button onclick="open_splice()">Science!</button>
+
+    Mission: <span id="mission">Grow 300 food in one year!</span>
+    Yearly food Grown: <span id="food"></span>
+    
+    <div id="splice_modal" class="splice_modal modal"></div>
+    <div id="seed_picker" class="seed_modal"></div>
+    <div id="seed_info" class="seed_info"></div>
+    <div id="winner" class="winner">YOU WIN</div>
 </body>
 
 <script id="plot-template" type="text/x-handlebars-template">
     <div>
+        Location:
+        <ul>
+            <li>{{location}}</li>
+        </ul>
+        Weather:
         <ul>
             <li>average sun {{sun}}</li>
             <li>average water {{water}}</li>
-            <li>nitrogen {{dirt.nitrogen}}</li>
-            <li>phosphorus {{dirt.phosphorus}}</li>
-            <li>potassium {{dirt.potassium}}</li>
-            <li>plant sun {{plant_base.sun}}</li>
-            <li>Root Depth {{plant.root_depth}}</li>
-            <li>Leaf Size {{plant.leaf_size}}</li>
+        </ul>
+        Soil:
+        <ul>
+            <li>nitrogen {{numberFixed dirt.nitrogen}}</li>
+            <li>phosphorus {{numberFixed dirt.phosphorus}}</li>
+            <li>potassium {{numberFixed dirt.potassium}}</li>
+        </ul>
+        Plant:
+        {{#if plant_base.name}}
+        {{plant_base.name}}
+        <ul>
+            <li>Root Spread {{numberFixed plant.root_spread}}</li>
+            <li>Root Depth {{numberFixed plant.root_depth}}</li>
+            <li>Leaf Size {{numberFixed plant.leaf_size}}</li>
+            <li>Leaf Shape {{plant_base.leaf_shape_name}}</li>
+            <li>Flower Shape {{plant_base.flower_shape_name}}</li>
+            <li><span style="background-color: {{plant_base.flower_color.css}}">flower color</span></li>
+        </ul>
+        Output:
+        <ul>
+            <li>Food: {{numberFixed plant.fruit}}</li>
+        </ul>
+        {{else}}
+        <button onclick="plant_new({{id}})">Plant new</button>
+        {{/if}}
+
+
+
+        {{#if save}}
+        <button onclick="save_plant({{plant_base.id}})">Save plant</button>
+        {{/if}}
+    </div>
+</script>
+
+<script id="seeds-template" type="text/x-handlebars-template">
+    <div class="seed-bag">
+        Seed Inventory
+        <ul>
+            {{#each this}}
+            <li onmouseenter="seed_overlay(event, {{id}})">{{name}} <a href="javascript:remove_inventory({{id}})">remove</a></li>
+            {{/each}}
         </ul>
     </div>
+</script>
+
+<script id="seeds-picker-template" type="text/x-handlebars-template">
+    <div class="seed-picker">
+        Seed Inventory {{plot_id}}
+        <ul>
+            {{#each seeds}}
+            <li onmouseenter="seed_overlay(event, {{id}})">{{name}} <a href="javascript:select_inventory({{../plot_id}}, {{id}})">Plant!</a></li>
+            {{/each}}
+        </ul>
+    </div>
+</script>
+
+<script id="seed-info-template" type="text/x-handlebars-template">
+    <div class="seed-info">
+        Seed Info {{id}}
+        <ul>
+            <li>{{name}}</li>
+            <li>Plant Height {{height}}</li>
+            <li>Plant Spread {{spread}}</li>
+            <li>Leaf Size {{leaf_size}}</li>
+            <li style="background-color: {{flower_color.css}}">Flower {{flower_shape_name}}</li>
+            <li>Food Provided {{fruit}}</li>
+            <li>Root Spread {{root_spread}}</li>
+            <li>Root Depth {{root_depth}}</li>
+            <li>Water Needs {{water}}</li>
+            <li>Water Heartiness {{water_range}}</li>
+            <li>Sun Needs {{sun}}</li>
+            <li>Nitrogen {{nitrogen}}</li>
+            <li>Phosphorus {{phosphorus}}</li>
+            <li>Potassium {{potassium}}</li>
+        </ul>
+        <span onclick="seed_overlay_close()">close</span>
+    </div>
+</script>
+
+<script id="splice-template" type="text/x-handlebars-template">
+    <div class="selections">
+        <div class="left_plant">
+            Pick left hand plant: 
+            <select id="splice_left" onchange="console.log('left')">
+                {{#each this}}
+                <option value={{id}}>{{name}}</option>
+                {{/each}}
+            </select>
+        </div>
+        <div class="splice_method">
+            Pick Method: 
+            <select id="splice_method">
+                <option value="0">Root Splice</option>
+                <option value="1">Root Swirl</option>
+            </select>
+        </div>
+        <div class="right_plant">
+            Right hand plant:
+            <select id="splice_right" onchange="console.log('right')">
+                {{#each this}}
+                <option value={{id}}>{{name}}</option>
+                {{/each}}
+            </select>
+        </div>
+    </div>
+    <div class="splice_controls">
+        New Plant Name <input id="splice_name" type="text">
+        <button onclick="save_splice()">save!</button>
+    </div>
+    <span onclick="close_splice()">close</span>
 </script>
 </html>
